@@ -11,20 +11,25 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# To link the dot-env keys, we use
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-zfgt3^5ctz(vgp-_0ij!gyri0_k^+0!pw$sic4gue&339+(a*5'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG')
 
 ALLOWED_HOSTS = []
 
@@ -84,11 +89,11 @@ WSGI_APPLICATION = 'shopcore_v1.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'shopcore_v1',
-        'USER': 'postgres',
-        'PASSWORD': 'Boluscoz',
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'NAME': os.environ.get('NAME'),
+        'USER': os.environ.get('USER'),
+        'PASSWORD': os.environ.get('PASSWORD'),
+        'HOST': os.environ.get('HOST'),
+        'PORT': os.environ.get('PORT')
     }
 }
 
@@ -140,5 +145,5 @@ REST_FRAMEWORK = {
         "drf_spectacular.openapi.AutoSchema",
 }
 
-# For Account model
-AUTH_USER_MODEL = "accounts.User"
+# For user Identification and authentication
+AUTH_USER_MODEL = os.environ.get('AUTH_USER_MODEL')
