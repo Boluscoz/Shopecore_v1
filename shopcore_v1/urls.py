@@ -19,6 +19,7 @@ from django.urls import path, include
 
 infra_urls = [
     path('admin/', admin.site.urls),
+    path('health/', include('apps.common.urls')),
 ]
 
 # 2. Main Customer-Facing Applications
