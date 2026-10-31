@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'apps.orders',
     'apps.common',
     'apps.cart',
-    'apps.accounts'
+    'apps.accounts',
+    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
@@ -139,10 +140,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Rest framework
 REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS":
-        "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+    ],
 }
 
 # For user Identification and authentication
