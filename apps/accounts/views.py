@@ -24,11 +24,11 @@ def token(request):
     email = request.data.get("email")
     password = request.data.get("password")
     if not email or not password:
-        return Response({"detail": "Email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
 
     user = authenticate(request, username=email, password=password)
     if not user or not user.is_active:
-        return Response({"detail": "Invalid credentials."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Invalid credentials."}, status=status.HTTP_400_BAD_REQUEST)
 
     token, _ = Token.objects.get_or_create(user=user)
     return Response({"token": token.key}, status=status.HTTP_200_OK)
@@ -46,7 +46,7 @@ def me(request):
             "first_name": user.first_name,
             "last_name": user.last_name,
         }, status=status.HTTP_200_OK)
-    
+
     if request.method == 'PATCH':
         allowed_fields = ['username', 'first_name', 'last_name']
         for field in allowed_fields:
