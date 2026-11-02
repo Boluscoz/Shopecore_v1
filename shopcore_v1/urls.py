@@ -25,11 +25,11 @@ infra_urls = [
 # 2. Main Customer-Facing Applications
 business_urls = [
     path('api/v1/accounts/', include('apps.accounts.urls')),
-    path('api/v1/accounts/', include('apps.catalog.urls')),
-    path('api/v1/accounts/', include('apps.orders.urls')),
-    path('api/v1/accounts/', include('apps.common.urls')),
-    path('api/v1/accounts/', include('apps.catalog.urls')),
-    path('api/v1/accounts/', include('apps.cart.urls')),
+    path('api/v1/catalog/', include('apps.catalog.urls')),
+    path('api/v1/orders/', include('apps.orders.urls')),
+    path('api/v1/common/', include('apps.common.urls')),
+    path('api/v1/payments/', include('apps.payments.urls')),
+    path('api/v1/cart/', include('apps.cart.urls')),
 ]
 
 urlpatterns = infra_urls + business_urls
