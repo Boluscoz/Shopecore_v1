@@ -77,6 +77,8 @@ class Payment(models.Model):
         related_name="payments",
     )
     provider = models.CharField(max_length=50, default="gateway")
+    currency = models.CharField(max_length=3, default="NGN")
+    customer_email = models.EmailField(blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(
         max_length=20,

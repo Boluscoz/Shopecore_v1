@@ -4,13 +4,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Order
-from .services import (
-    CheckoutError,
-    checkout as checkout_service,
-    cancel_order as cancel_order_service,
-    verify_payment as verify_payment_service,
-)
+from .services import CheckoutError, create_order, set_order_cancelled
 from .serializers import OrderSerializer
+from apps.payments import services as payment_services
+
+
+def _payment_payload(payment):
+    return {
+        "id": payment.id,
+        "provider": payment.provider,
+        "amount": str(payment.amount),
+        "currency": payment.currency,
+        "status": payment.status,
+        "external_id": payment.external_id,
+    }
 
 
 @api_view(["GET"])
@@ -47,24 +54,19 @@ def order_detail(request, pk):
 @permission_classes([IsAuthenticated])
 def checkout(request):
     items_data = request.data.get("items") or []
-    provider = request.data.get("provider", "gateway")
+    currency = request.data.get("currency", "NGN")
     try:
-        order, payment = checkout_service(
-            request.user, items_data, provider=provider
+        order, total = create_order(request.user, items_data)
+        payment = payment_services.initialize(
+            order.id, currency=currency, metadata=request.data
         )
-    except CheckoutError as exc:
+    except (CheckoutError, payment_services.PaymentError) as exc:
         return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     serializer = OrderSerializer(order)
     return Response(
         {
             "order": serializer.data,
-            "payment": {
-                "id": payment.id,
-                "provider": payment.provider,
-                "amount": str(payment.amount),
-                "status": payment.status,
-                "external_id": payment.external_id,
-            },
+            "payment": _payment_payload(payment),
         },
         status=status.HTTP_201_CREATED,
     )
@@ -72,44 +74,9 @@ def checkout(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def verify_payment(request, pk):
-    """Confirm a payment authorization and allocate stock.
-
-    Called by the payment provider's webhook/callback. Stock is only
-    decremented once the payment is captured; if stock is short, the order
-    and payment are marked failed instead of overselling.
-    """
-    external_id = request.data.get("external_id")
-    provider = request.data.get("provider", "gateway")
-    if not external_id:
-        return Response(
-            {"detail": "external_id is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    order, payment, result = verify_payment_service(
-        pk, external_id, provider=provider
-    )
-    serializer = OrderSerializer(order)
-    return Response(
-        {
-            "order": serializer.data,
-            "payment": {
-                "id": payment.id,
-                "provider": payment.provider,
-                "amount": str(payment.amount),
-                "status": payment.status,
-                "external_id": payment.external_id,
-            },
-            "result": result,
-        }
-    )
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
 def cancel_order(request, pk):
     try:
-        order = cancel_order_service(pk, user=request.user)
+        order = set_order_cancelled(pk, user=request.user)
     except CheckoutError as exc:
         return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
     serializer = OrderSerializer(order)
