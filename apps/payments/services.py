@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import os
 from decimal import Decimal
 
 from django.conf import settings
@@ -9,6 +10,7 @@ from django.db import transaction
 from apps.catalog.models import Product
 from apps.orders.models import Order, Payment
 from apps.orders import services as order_services
+from djpaystack import PaystackClient
 
 
 class PaymentError(Exception):
@@ -25,30 +27,47 @@ class CurrencyError(PaymentError):
 # ---------------------------------------------------------------------------
 
 def _paystack_secret():
-    return getattr(settings, "PAYSTACK_SECRET_KEY", "")
+    return getattr(settings, "PAYSTACK", {}).get("SECRET_KEY") or os.environ.get('Pk_secret_KEY')
 
 
 def _paystack_base_url():
     return getattr(settings, "PAYSTACK_BASE_URL", "https://api.paystack.co")
 
 
-def initialize_provider(amount, currency, customer_email, metadata=None):
-    """Stub: create a Paystack transaction and return its reference.
+def _paystack_client():
+    return PaystackClient()
 
-    Replace the body with the real paystack SDK call. Expected return:
+
+def initialize_provider(amount, currency, customer_email, metadata=None):
+    """Create a Paystack transaction and return its reference.
+
+    Expected return:
       {"reference": "ref_...", "access_code": "...", "amount": <kobo int>}
     """
-    raise NotImplementedError("Wire the Paystack SDK here.")
+    client = _paystack_client()
+    response = client.transactions.initialize(
+        email=customer_email,
+        amount=amount,
+        currency=currency,
+        metadata=metadata,
+    )
+    data = response.get("data", {})
+    return {
+        "reference": data.get("reference"),
+        "access_code": data.get("access_code"),
+        "amount": data.get("amount"),
+    }
 
 
 def provider_verify_reference(reference):
-    """Stub: fetch the transaction from Paystack by reference.
+    """Fetch the transaction from Paystack by reference.
 
-    Replace with the real SDK call. Expected return: the decoded JSON body,
+    Expected return: the decoded JSON body,
     e.g. {"status": True, "data": {"reference":..., "amount":..., "currency":
     "NGN", "status": "success", ...}}.
     """
-    raise NotImplementedError("Wire the Paystack SDK here.")
+    client = _paystack_client()
+    return client.transactions.verify(reference=reference)
 
 
 def verify_webhook_signature(payload, signature):
@@ -208,7 +227,8 @@ def verify_provider_reference(order_id, external_id, provider="paystack"):
             "insufficient": insufficient,
         }
         payment.save()
-        order_services.apply_payment_result(order.id, "stock_out", insufficient)
+        order_services.apply_payment_result(
+            order.id, "stock_out", insufficient)
         return order, payment, "stock_out"
 
     # Allocate stock and capture the payment.
@@ -279,6 +299,10 @@ def refund(order_id, amount=None, reason=""):
         raise PaymentError("No captured payment to refund.")
 
     refund_amount = amount if amount is not None else str(payment.amount)
-    # Provider refund call (stubbed).
-    # refund_provider(payment.external_id, refund_amount, reason)
-    raise NotImplementedError("Wire the Paystack refund SDK call here.")
+    # Provider refund call.
+    client = _paystack_client()
+    client.refunds.create(
+        transaction=payment.external_id,
+        amount=int(float(refund_amount) * 100),
+        customer_note=reason,
+    )

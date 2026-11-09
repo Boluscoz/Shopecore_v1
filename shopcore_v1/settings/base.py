@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'apps.common',
     'apps.cart',
     'apps.accounts',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'djpaystack'
 ]
 
 MIDDLEWARE = [
@@ -149,3 +150,10 @@ REST_FRAMEWORK = {
 
 # For user Identification and authentication
 AUTH_USER_MODEL = os.environ.get('AUTH_USER_MODEL')
+
+# paystack
+PAYSTACK = {
+    'SECRET_KEY': os.environ.get('Pk_secret_key'),
+    'PUBLIC_KEY': os.environ.get('Pk_public_key'),
+    'ENVIRONMENT': os.environ.get('Pk_ENVIRONMENT', 'test'),
+}
