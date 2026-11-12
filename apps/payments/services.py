@@ -11,6 +11,9 @@ from apps.catalog.models import Product
 from apps.orders.models import Order, Payment
 from apps.orders import services as order_services
 from djpaystack import PaystackClient
+import logging
+
+logger = logging.getLogger("apps.payments")
 
 
 class PaymentError(Exception):
@@ -34,17 +37,13 @@ def _paystack_base_url():
     return getattr(settings, "PAYSTACK_BASE_URL", "https://api.paystack.co")
 
 
-def _paystack_client():
-    return PaystackClient()
-
-
 def initialize_provider(amount, currency, customer_email, metadata=None):
     """Create a Paystack transaction and return its reference.
 
     Expected return:
       {"reference": "ref_...", "access_code": "...", "amount": <kobo int>}
     """
-    client = _paystack_client()
+    client = PaystackClient()
     response = client.transactions.initialize(
         email=customer_email,
         amount=amount,
@@ -66,7 +65,7 @@ def provider_verify_reference(reference):
     e.g. {"status": True, "data": {"reference":..., "amount":..., "currency":
     "NGN", "status": "success", ...}}.
     """
-    client = _paystack_client()
+    client = PaystackClient()
     return client.transactions.verify(reference=reference)
 
 
@@ -91,7 +90,20 @@ def initialize(order_id, currency="NGN", metadata=None):
 
     Order state stays 'pending'; only the Payment row is created here.
     """
+    logger.info(
+        "payment.initialize.start",
+        extra={"order_id": order_id, "currency": currency},
+    )
     try:
+        payment = Payment.objects.create(...)
+        logger.info(
+            "payment.initialize.success",
+            extra={
+                "payment_id": payment.id,
+                "external_id": payment.external_id,
+                "status": payment.status,
+            },
+        )
         order = Order.objects.select_for_update().get(pk=order_id)
     except Order.DoesNotExist:
         raise PaymentError("Order not found.")
@@ -249,7 +261,15 @@ def verify_provider_reference(order_id, external_id, provider="paystack"):
 @transaction.atomic
 def handle_webhook(payload, signature):
     """Process a Paystack webhook. Signature-verified before any state change."""
+    logger.info(
+        "webhook.received",
+        extra={"event_type": event.get("event"), "reference": reference},
+    )
     if not verify_webhook_signature(payload, signature):
+        logger.warning(
+            "webhook.invalid_signature",
+            extra={"reference": reference},
+        )
         raise PaymentError("Invalid webhook signature.")
 
     event = json.loads(payload)
@@ -300,7 +320,7 @@ def refund(order_id, amount=None, reason=""):
 
     refund_amount = amount if amount is not None else str(payment.amount)
     # Provider refund call.
-    client = _paystack_client()
+    client = PaystackClient()
     client.refunds.create(
         transaction=payment.external_id,
         amount=int(float(refund_amount) * 100),

@@ -4,6 +4,10 @@ from django.db import transaction
 
 from apps.catalog.models import Product
 from .models import Order, OrderItem
+import logging
+
+
+logger = logging.getLogger("apps.orders")
 
 
 class CheckoutError(Exception):

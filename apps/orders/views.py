@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import Order
 from .services import CheckoutError, create_order, set_order_cancelled
@@ -9,6 +10,9 @@ from .serializers import OrderSerializer
 from apps.payments import services as payment_services
 
 
+@extend_schema(
+    tags=["Orders"]
+)
 def _payment_payload(payment):
     return {
         "id": payment.id,
@@ -20,6 +24,7 @@ def _payment_payload(payment):
     }
 
 
+@extend_schema(tags=["Orders"])
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def orders(request):
@@ -28,6 +33,7 @@ def orders(request):
     return Response(serializer.data)
 
 
+@extend_schema(tags=["Orders"])
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def order_detail(request, pk):
@@ -50,6 +56,7 @@ def order_detail(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Orders"])
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def checkout(request):
@@ -72,6 +79,7 @@ def checkout(request):
     )
 
 
+@extend_schema(tags=["Orders"])
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def cancel_order(request, pk):

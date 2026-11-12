@@ -17,6 +17,8 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
 # To link the dot-env keys, we use
 load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -52,7 +54,7 @@ INSTALLED_APPS = [
     'apps.cart',
     'apps.accounts',
     'rest_framework.authtoken',
-    'djpaystack'
+    'djpaystack',
 ]
 
 MIDDLEWARE = [
@@ -151,9 +153,101 @@ REST_FRAMEWORK = {
 # For user Identification and authentication
 AUTH_USER_MODEL = os.environ.get('AUTH_USER_MODEL')
 
-# paystack
+# For Paystack Configuration...
 PAYSTACK = {
     'SECRET_KEY': os.environ.get('Pk_secret_key'),
     'PUBLIC_KEY': os.environ.get('Pk_public_key'),
     'ENVIRONMENT': os.environ.get('Pk_ENVIRONMENT', 'test'),
+}
+
+# For drf-spectacular documentation...
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Shopecore API',
+    'DESCRIPTION': 'Portfolio-quality e-commerce REST API built with Django and DRF.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Auth scheme for Swagger UI (matches TokenAuthentication in REST_FRAMEWORK)
+    'SECURITY': [{'tokenAuth': []}],
+    'SECURITY_SCHEMES': {
+        'tokenAuth': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Token <your_token>',
+        }
+    },
+    # Optional: tag grouping by app
+    'TAGS': [
+        {'name': 'Payments', 'description': 'Payment initialization, verification, status, webhooks, refunds'},
+        {'name': 'Orders', 'description': 'Order checkout and state transitions'},
+        {'name': 'Cart', 'description': 'For order grouping and calculating totals'},
+        {'name': 'Catalog', 'description': 'For product classification and grouping'},
+        {'name': 'Accounts', 'description': 'For account and profile dealings'},
+        {'name': 'Common', 'description': 'Health checks and common utilities'},
+    ],
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+    },
+}
+
+# For structured logs..
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": (
+                "{asctime} {levelname} {name} {module}:{lineno} "
+                "{threadName} {message}"
+            ),
+            "style": "{",
+        },
+        # JSON-friendly for production log collectors
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "fmt": "%(asctime)s %(levelname)s %(name)s %(module)s %(lineno)d %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": LOG_DIR / "shopcore.log",
+            "when": "midnight",
+            "backupCount": 7,
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        # Your apps
+        "apps.payments": {
+            "handlers": ["console", "file"],
+            "level": os.environ.get("PAYMENTS_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "apps.orders": {
+            "handlers": ["console", "file"],
+            "level": os.environ.get("ORDERS_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        # Django/DRF
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
 }

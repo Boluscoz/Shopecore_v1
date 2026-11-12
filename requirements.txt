@@ -1,1 +1,2 @@
 paystack-django==2.0.1
+python-json-logger==4.0.0

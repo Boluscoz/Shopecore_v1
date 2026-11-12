@@ -4,9 +4,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
+from drf_spectacular.utils import extend_schema
 from .serializers import UserRegistrationSerializer
 
 
+@extend_schema(tags=["Accounts"])
 @api_view(["POST"])
 def register(request):
     serializer = UserRegistrationSerializer(data=request.data)
@@ -19,6 +21,7 @@ def register(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Accounts"])
 @api_view(['POST'])
 def token(request):
     email = request.data.get("email")
@@ -34,6 +37,7 @@ def token(request):
     return Response({"token": token.key}, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Accounts"])
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def me(request):

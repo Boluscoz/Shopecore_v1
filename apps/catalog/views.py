@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
 
@@ -14,6 +15,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 
+@extend_schema(tags=["Catalog"])
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def categories(request):
@@ -45,6 +47,7 @@ def categories(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Catalog"])
 @api_view(['GET', 'PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def category_detail(request, pk):
@@ -68,6 +71,7 @@ def category_detail(request, pk):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Catalog"])
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def category_deactivate(request, pk):
@@ -82,6 +86,7 @@ def category_deactivate(request, pk):
     return Response({'detail': 'Category deactivated.'}, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Catalog"])
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def products(request):
@@ -125,6 +130,7 @@ def products(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Catalog"])
 @api_view(['GET', 'PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def product_detail(request, pk):
@@ -148,6 +154,7 @@ def product_detail(request, pk):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Catalog"])
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def product_deactivate(request, pk):

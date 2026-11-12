@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 from apps.catalog.models import Product
 from .models import Cart, CartItem
 from .serializers import CartSerializer, CartItemSerializer
@@ -15,6 +16,7 @@ def get_or_create_active_cart(user):
     return cart
 
 
+@extend_schema(tags=["Cart"])
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cart(request):
@@ -23,6 +25,7 @@ def cart(request):
     return Response(serializer.data)
 
 
+@extend_schema(tags=["Cart"])
 @api_view(['POST', 'PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def cart_item(request, items=None):
@@ -83,6 +86,7 @@ def cart_item(request, items=None):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Cart"])
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def cart_item_remove(request, items=None):
